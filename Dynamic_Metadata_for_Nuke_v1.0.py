@@ -135,9 +135,7 @@ if not bFinish:
 
 
     for i, row in enumerate(csv_data):
-        # print(i)
-        # print(row)
-        # print(row["Focal Length (mm)"])
+
 
         _Timecode = row['Timecode']
         _Focal_Length_meter = row["Focal Length (mm)"]
@@ -172,8 +170,7 @@ if not bFinish:
             'Camera_Roll': float(_Camera_Roll)
         })
 
-    # print("samples")
-    # print(samples)
+
 
     # keysnk1 = []
     # keysnk2 = []
@@ -200,38 +197,18 @@ if not bFinish:
     # keyswscale = []
 
     for i, sample in enumerate(samples):
-        # if not i == len(samples)-1:
-        # print(samples[i]['Timecode'])
-        # print(timecode_to_frames(samples[i]['Timecode']))
+      
         samples[i]['frames'] = timecode_to_frames(samples[i]['Timecode'])
-        # print(samples[i]['frames'])
-        # print(frames_to_timecode(samples[i]['frames']))
+     
             
         write_frame = int(samples[i]['frames'])
-        # print(i)
-        # print (write_frame)
 
         # radian
         # tilt = math.radians(samples[i]['Camera_Tilt'])
         # pan = math.radians(samples[i]['p'])
         # roll = math.radians(samples[i]['Camera_Roll'])
         
-        # z1 = math.cos(tilt)*math.sin(pan)
-        # z2 = math.cos(tilt)*math.cos(pan)
-        # z3 = math.sin(tilt)
-
-        # alfa = 90-math.degrees(math.acos(z1))
-        
-        # if z3 == 0 and z2 == 0:
-        #     beta = 0
-        # else:
-        #     beta = math.degrees(math.atan2(z3, z2))
-        
-        # if math.sin(alfa)*math.sin(beta) == 0 and math.cos(beta) == 0:
-        #     gama = 0
-        # else:
-        #     gama = - samples[i]['r'] - math.degrees(math.atan2(math.sin(math.radians(alfa))*math.sin(math.radians(beta)), math.cos(math.radians(beta))))
-        
+       
         #二重配列に結果としてなるように、[wframe, samples[i][]]を配列の中にappendしている。
         # keysnry.append([wframe, pan])
         # radian
@@ -274,22 +251,13 @@ if not bFinish:
     animfocus.addKey([nuke.AnimationKey(frame, value) for (frame,value) in keysnfocus])
     animfstop.addKey([nuke.AnimationKey(frame, value) for (frame,value) in keysnfstop])
 
-    # print(keysnfocus)
-    # for (frame, value) in keysnfocus:
-        # print("frame")
-        # print(frame)
-        # print("value")
-        # print(value)
-
     # animcsx.addKey([nuke.AnimationKey(frame, value) for (frame,value) in keyscamcsx])
     # animcsy.addKey([nuke.AnimationKey(frame, value) for (frame,value) in keyscamcsy])
     # animhapert.addKey([nuke.AnimationKey(frame, value) for (frame,value) in keyshapert])
     # animvapert.addKey([nuke.AnimationKey(frame, value) for (frame,value) in keysvapert])
     # animwscale.addKey([nuke.AnimationKey(frame, value) for (frame,value) in keyswscale])
 
-    # project settingのrangeの設定
-    # nuke.root()['first_frame'].setValue(samples[0]['frm']+2)
-    # nuke.root()['last_frame'].setValue(samples[len(samples)-2]['frm'])
+
 
     #project settingのrangeを設定
     # for check
@@ -297,18 +265,3 @@ if not bFinish:
     # nuke.root()['last_frame'].setValue(timecode_to_frames(samples[len(samples)-1]["Timecode"]))
 
 
-
-    #set video start frame ----------------timecode nije na prvom frejmu kad se loada video (fix oduzet zadnji frejm)
-    #nuke.toNode('Viewer1').setSelected(True)
-
-    #nuke.frame(9999999)
-
-
-    #nuke.frame(nuke.root()['first_frame'])
-    #nuke.selectedNode()['xpos'].value()
-    #StypeMerge.setXYpos(0,-50)
-    #StypeDistort.setXYpos(-100,-56)
-    #StypeRender.setXYpos(-100,-100)
-    #StypeCam.setXYpos(-90,-200)
-    #StypeScene.setXYpos(-220,-120)
-    #StypeRead.setXYpos(0,-200)
