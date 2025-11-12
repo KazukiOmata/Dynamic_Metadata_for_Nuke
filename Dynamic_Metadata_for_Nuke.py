@@ -1,5 +1,5 @@
 #Dynamic Metadata from SilverStack csv for Nuke 
-# v1.1
+# v1.2
 # Kazuki Omata
 
 
@@ -56,7 +56,7 @@ def frames_to_timecode(frames, start=None):
 p1 = nuke.Panel('Dynamic Metadata setting')
 
 p1.addFilenameSearch('CSV file path', '~/Desktop/')
-# p1.addEnumerationPulldown('CSV type', 'SilverStack, SONY RawViewer')
+p1.addEnumerationPulldown('CSV type', 'SilverStack SONY-RawViewer')
 p1.addEnumerationPulldown("Type of Camera Rotation order", 'XYZ XZY ZYX ZXY YXZ YZX')
 
 
@@ -78,11 +78,23 @@ rotation_order = p1.value("Type of Camera Rotation order")
 
 # csv parser
 try:
-    with open(csv_path) as f:
-        # reader = csv.reader(f)
-        # csv_data = [row for row in reader]
-        reader = csv.DictReader(f)
-        csv_data = [row for row in reader]
+    if(csv_type == "SilverStack"):
+        with open(csv_path) as f:
+            # reader = csv.reader(f)
+            # csv_data = [row for row in reader]
+            reader = csv.DictReader(f)
+            csv_data = [row for row in reader]
+    elif(csv_type == "SONY-RawViewer"):
+        with open(csv_path) as f:
+            # reader = csv.reader(f)
+            # csv_data = [row for row in reader]
+            reader = csv.DictReader(f, delimiter='\t')
+            csv_data = [row for row in reader]
+    else:
+        print("csv type is not valid")
+        bFinish = True
+        # sys.exit(0)
+
 except FileNotFoundError:
     print("file is no found")
     bFinish = True
@@ -182,37 +194,71 @@ if not bFinish:
  
     samples = []
 
-    
-
-
-
 
     for i, row in enumerate(csv_data):
 
+        if csv_type == "SilverStack":
+            _Timecode = row['Timecode']
+            _Focal_Length_meter = row["Focal Length (mm)"]
+            if(_Focal_Length_meter == ""):
+                _Focal_Length_meter = 0.0
+            
+            _Aperture = row['Aperture']
+            if(_Aperture == ""):
+                _Aperture = 0.0
+            
+            _Focus_Distance_feet = row["Focus Distance (ft)"]
+            if(_Focus_Distance_feet == ""):
+                _Focus_Distance_feet = 0.0
 
-        _Timecode = row['Timecode']
-        _Focal_Length_meter = row["Focal Length (mm)"]
-        if(_Focal_Length_meter == ""):
-            _Focal_Length_meter = 0.0
-        
-        _Aperture = row['Aperture']
-        if(_Aperture == ""):
-            _Aperture = 0.0
-        
-        _Focus_Distance_feet = row["Focus Distance (ft)"]
-        if(_Focus_Distance_feet == ""):
-            _Focus_Distance_feet = 0.0
+            _Focus_Distance_meter = float(_Focus_Distance_feet) * 0.3048
 
-        _Focus_Distance_meter = float(_Focus_Distance_feet) * 0.3048
+            _Camera_Tilt = row['Camera Tilt']
+            if(_Camera_Tilt == ""):
+                _Camera_Tilt = 0.0
+            
+            _Camera_Roll = row['Camera Roll']
+            if(_Camera_Roll == ""):
+                _Camera_Roll = 0.0
 
-        _Camera_Tilt = row['Camera Tilt']
-        if(_Camera_Tilt == ""):
-            _Camera_Tilt = 0.0
-        
-        _Camera_Roll = row['Camera Roll']
-        if(_Camera_Roll == ""):
-            _Camera_Roll = 0.0
-        
+        elif csv_type == "SONY-RawViewer":
+
+            _Timecode = row['Timecode']
+
+            _Focal_Length_meter = row["Lens Zoom Actual Focal Length"].replace("mm", "")
+            _Focal_Length_meter = float(_Focal_Length_meter)
+            if(_Focal_Length_meter == ""):
+                _Focal_Length_meter = 0.0
+
+            _Aperture = row["Iris F-Number"]
+            _Aperture = float(_Aperture)
+            if(_Aperture == ""):
+                _Aperture = 0.0
+                
+            
+            _Focus_Distance_meter = row["Focus Position From Image Plane"].replace("m", "")
+            _Focus_Distance_meter =float(_Focus_Distance_meter)
+            # print(_Focus_Distance_meter)
+            # print(type(_Focus_Distance_meter))
+            if(_Focus_Distance_meter == ""):
+                _Focus_Distance_meter = 0.0
+
+            _Focus_Distance_feet = float(_Focus_Distance_feet) / 0.3048
+
+            _Camera_Tilt = row['Camera Tilt Angle']
+            _Camera_Tilt = float(_Camera_Tilt)
+            if(_Camera_Tilt == ""):
+                _Camera_Tilt = 0.0
+            
+            _Camera_Roll = row['Camera Roll Angle']
+            _Camera_Roll = float(_Camera_Roll)
+            if(_Camera_Roll == ""):
+                _Camera_Roll = 0.0
+
+        else:
+            print("csv type is not valid")
+            break
+
         samples.append({
             'Timecode': _Timecode,
             'Focal_Length_meter': float(_Focal_Length_meter),
@@ -314,7 +360,7 @@ if not bFinish:
 
     #project settingのrangeを設定
     # for check
-    # nuke.root()['first_frame'].setValue(timecode_to_frames(samples[0]["Timecode"]))
-    # nuke.root()['last_frame'].setValue(timecode_to_frames(samples[len(samples)-1]["Timecode"]))
+    nuke.root()['first_frame'].setValue(timecode_to_frames(samples[0]["Timecode"]))
+    nuke.root()['last_frame'].setValue(timecode_to_frames(samples[len(samples)-1]["Timecode"]))
 
 
