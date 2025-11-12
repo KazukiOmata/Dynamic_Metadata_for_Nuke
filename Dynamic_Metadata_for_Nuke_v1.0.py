@@ -7,6 +7,7 @@ import csv
 import math
 import nuke
 import datetime
+import re
 
 
 
@@ -16,6 +17,8 @@ import datetime
 check = []
 returnP1 = None
 bFinish = False
+csv_path = ""
+csv_data = None
 
 # project fps
 framerate = nuke.root().fps()
@@ -66,28 +69,80 @@ else:
     bFinish = True
 
 # ---------- itnitializing
+# get values from panel
+
+csv_path = p1.value("CSV file path")
+rotation_order = p1.value("Type of Camera Rotation order")
+
+# csv parser
+try:
+    with open(csv_path) as f:
+        # reader = csv.reader(f)
+        # csv_data = [row for row in reader]
+        reader = csv.DictReader(f)
+        csv_data = [row for row in reader]
+except FileNotFoundError:
+    print("file is no found")
+    bFinish = True
+    # sys.exit(0)
+except PermissionError:
+    print("no permission to access the file")
+    bFinish = True
+    # sys.exit(0)
+
 
 if not bFinish:
     
-    # get values from panel
-
-    csv_path = p1.value("CSV file path")
-    rotation_order = p1.value("Type of Camera Rotation order")
     
-
+    
+    bExist_DynamicMetadataCam_node = False
     #check existing all nodes
     for n in nuke.allNodes():
         #add to check=[] nodes name
-        if n.name() == "DynamicMetadataCam":
-            check.append("DynamicMetadataCam")
-        
+        _name_counter = 0
+        # _exist_cam = False
 
+        # indexをつけて新しいnodeを作りたい
+        match_pattern = 'DynamicMetadataCam_\d*'
+        repatter = re.compile(match_pattern)
+        match_result = repatter.match(n.name())
+
+        if bool(match_result):
+            check.append(n.name())
+            bExist_DynamicMetadataCam_node = True
     
-    if not "DynamicMetadataCam" in check:
-        DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam", xpos=-90,ypos=-200, rot_order=rotation_order)
+
+    check.sort()
+
+
+    if bExist_DynamicMetadataCam_node:
+        node_counter = 0
+        for i in range(len(check)):
+            
+           
+            print("check[i]")
+            print(check[i])
+            if 'DynamicMetadataCam_' + str(node_counter) == check[i]:
+                # last checkならincrementして作成
+                if i + 1 == len(check):
+                    DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_"+str(node_counter+1), xpos=-90 + ((node_counter+1) * 90),ypos=-200, rot_order=rotation_order)
+                    break
+                # 同名ノードがあった場合の考慮 ex:DynamicMetadataCam_1が2つあった場合
+                # incrementしない
+                if 'DynamicMetadataCam_' + str(node_counter) != check[i+1]:
+                    node_counter = node_counter+1
+
+            # 歯抜けで存在しなかったら
+            else:
+                # print("create_new_cam")
+                DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_"+str(node_counter), xpos=-90 + (node_counter * 90),ypos=-200, rot_order=rotation_order)
+                break
+    #nodeが存在しなかったら
     else:
-        # if node already exists, use it
-        DynamicMetadataCam = nuke.toNode('DynamicMetadataCam')
+        DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_0", xpos=-90 ,ypos=-200, rot_order=rotation_order)
+
+        
+        
 
     # set animation keyframe
     # DynamicMetadataCam['translate'].setAnimated()
@@ -126,12 +181,9 @@ if not bFinish:
     csv_data = None
     samples = []
 
-    # csv parser
-    with open(csv_path) as f:
-        # reader = csv.reader(f)
-        # csv_data = [row for row in reader]
-        reader = csv.DictReader(f)
-        csv_data = [row for row in reader]
+    
+
+
 
 
     for i, row in enumerate(csv_data):
