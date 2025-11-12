@@ -1,5 +1,5 @@
 #Dynamic Metadata from SilverStack csv for Nuke 
-# v1.0
+# v1.1
 # Kazuki Omata
 
 
@@ -56,6 +56,7 @@ def frames_to_timecode(frames, start=None):
 p1 = nuke.Panel('Dynamic Metadata setting')
 
 p1.addFilenameSearch('CSV file path', '~/Desktop/')
+# p1.addEnumerationPulldown('CSV type', 'SilverStack, SONY RawViewer')
 p1.addEnumerationPulldown("Type of Camera Rotation order", 'XYZ XZY ZYX ZXY YXZ YZX')
 
 
@@ -72,6 +73,7 @@ else:
 # get values from panel
 
 csv_path = p1.value("CSV file path")
+csv_type = p1.value("CSV type")
 rotation_order = p1.value("Type of Camera Rotation order")
 
 # csv parser
@@ -178,7 +180,6 @@ if not bFinish:
 
 
  
-    csv_data = None
     samples = []
 
     
