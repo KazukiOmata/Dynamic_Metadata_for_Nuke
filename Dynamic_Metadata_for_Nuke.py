@@ -1,5 +1,5 @@
 #Dynamic Metadata from SilverStack csv for Nuke 
-# v1.2
+# v1.2.2
 # Kazuki Omata
 
 
@@ -243,7 +243,7 @@ if not bFinish:
             if(_Focus_Distance_meter == ""):
                 _Focus_Distance_meter = 0.0
 
-            _Focus_Distance_feet = float(_Focus_Distance_feet) / 0.3048
+            _Focus_Distance_feet = float(_Focus_Distance_meter) / 0.3048
 
             _Camera_Tilt = row['Camera Tilt Angle']
             _Camera_Tilt = float(_Camera_Tilt)
@@ -360,7 +360,7 @@ if not bFinish:
 
     #project settingのrangeを設定
     # for check
-    nuke.root()['first_frame'].setValue(timecode_to_frames(samples[0]["Timecode"]))
-    nuke.root()['last_frame'].setValue(timecode_to_frames(samples[len(samples)-1]["Timecode"]))
+    # nuke.root()['first_frame'].setValue(timecode_to_frames(samples[0]["Timecode"]))
+    # nuke.root()['last_frame'].setValue(timecode_to_frames(samples[len(samples)-1]["Timecode"]))
 
 
