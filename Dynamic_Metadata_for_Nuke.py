@@ -1,13 +1,16 @@
 #Dynamic Metadata from SilverStack csv for Nuke 
-# v1.2.2
+# v1.2.3
 # Kazuki Omata
 
 
 import csv
 import math
 import nuke
-import datetime
+# import datetime
 import re
+import pathlib #for file path
+import glob #for file search
+
 
 
 
@@ -36,7 +39,7 @@ def _seconds(value):
         return 0
 
 def _timecode(seconds):
-    return '{h:02f}:{m:02f}:{s:02f}:{f:02f}'.format(h=int(seconds/3600),m=int(seconds/60%60),s=int(seconds%60),f=round((seconds-int(seconds))*framerate))
+    return '{h:02}:{m:02}:{s:02}:{f:02}'.format(h=int(seconds/3600),m=int(seconds/60%60),s=int(seconds%60),f=round((seconds-int(seconds))*framerate))
 
 def _frames(seconds):
     return seconds * framerate
@@ -52,11 +55,21 @@ def frames_to_timecode(frames, start=None):
 
 # ----------panel setting
 
+read_nodes = nuke.allNodes("Read")
+read_nodes.sort()
+read_node_names = ""
+for n in read_nodes:
+    read_node_names += n.name() + " "
+print(read_node_names)
+
 
 p1 = nuke.Panel('Dynamic Metadata setting')
-
-p1.addFilenameSearch('CSV file path', '~/Desktop/')
+p1.addEnumerationPulldown('Select Read Node', read_node_names)
+# p1.addFilenameSearch('CSV file path', '~/Desktop/')
+p1.addFilenameSearch('Searching CSV folder path', '~/Desktop/')
 p1.addEnumerationPulldown('CSV type', 'SilverStack SONY-RawViewer')
+# p1.addSingleLineInput("Start frame", 1001)
+p1.addEnumerationPulldown("Keyframe", "StartFrame SourceTimecode" )
 p1.addEnumerationPulldown("Type of Camera Rotation order", 'XYZ XZY ZYX ZXY YXZ YZX')
 
 
@@ -72,9 +85,60 @@ else:
 # ---------- itnitializing
 # get values from panel
 
-csv_path = p1.value("CSV file path")
+# csv_path = p1.value("CSV file path")
+csv_path = ""
+csv_folder_path = p1.value("Searching CSV folder path")
+
 csv_type = p1.value("CSV type")
 rotation_order = p1.value("Type of Camera Rotation order")
+
+
+selected_read_node_name = p1.value("Select Read Node")
+# print(selected_read_node_name)
+# print(type(selected_read_node_name))
+EXR_node = nuke.toNode(selected_read_node_name)
+EXR_first_frame = int(EXR_node["first"].value())
+EXR_last_frame  = int(EXR_node["last"].value())
+# print(first)
+# print(last)
+# EXR_node_start_tc = EXR_node.metadata("input/timecode")
+# EXR_node_start_frame = timecode_to_frames(EXR_node_start_tc)
+# EXR_node_start_frame = int(p1.value("Start frame"))
+# nuke.frame(EXR_node_start_frame)#move to start frame
+
+nuke.frame(EXR_first_frame)#move to start frame
+EXR_node_start_timecode = frames_to_timecode(EXR_first_frame)
+# print(EXR_node_start_timecode)
+# print(type(EXR_node_start_timecode))
+# print(EXR_node_start_frame)
+# print(type(EXR_node_start_frame))
+EXR_node_reel_name = EXR_node.metadata("exr/reelName")
+# print(EXR_node_start_tc)
+# print(EXR_node_reel_name)
+keyframe = p1.value("Keyframe")
+
+
+
+searching_path = pathlib.Path(csv_folder_path)
+print(searching_path)
+# print(type(searching_path))<class 'pathlib.PosixPath'>
+searching_path = str(searching_path)
+
+csv_path_array = glob.glob('**/' + EXR_node_reel_name +'.csv', recursive=True, root_dir=searching_path)
+# print(csv_path_array)
+if (len(csv_path_array) == 0):
+    print("CSV file is not found")
+    bFinish = True
+elif(len(csv_path_array) > 1):
+    print("Multiple CSV files are found")
+    bFinish = True
+else:
+    csv_path = searching_path + "/" + csv_path_array[0]
+    print(csv_path)
+
+
+
+
 
 # csv parser
 try:
@@ -298,34 +362,42 @@ if not bFinish:
     for i, sample in enumerate(samples):
       
         samples[i]['frames'] = timecode_to_frames(samples[i]['Timecode'])
-     
-            
-        write_frame = int(samples[i]['frames'])
 
-        # radian
-        # tilt = math.radians(samples[i]['Camera_Tilt'])
-        # pan = math.radians(samples[i]['p'])
-        # roll = math.radians(samples[i]['Camera_Roll'])
+        # EXRのstart TCよりも前にはkeyを打たない
+        if(EXR_first_frame <= samples[i]['frames']):
+            
+            if(keyframe == "StartFrame"):
+                write_frame = 1001 + i
+            elif(keyframe == "SourceTimecode"):
+                write_frame = int(samples[i]['frames'])
+            else:
+                print("keyframe is not valid")
+                break
+
+            # radian
+            # tilt = math.radians(samples[i]['Camera_Tilt'])
+            # pan = math.radians(samples[i]['p'])
+            # roll = math.radians(samples[i]['Camera_Roll'])
+            
         
-       
-        #二重配列に結果としてなるように、[wframe, samples[i][]]を配列の中にappendしている。
-        # keysnry.append([wframe, pan])
-        # radian
-        keysnrz.append([write_frame, samples[i]['Camera_Roll']])
-        keysnrx.append([write_frame, samples[i]['Camera_Tilt']])
-        
-        
-        # keysnk1.append([wframe, samples[i]['k1']])
-        # keysnk2.append([wframe, samples[i]['k2']])
-        # keysncsx.append([wframe, samples[i]['csx']])
-        # keysncsy.append([wframe, samples[i]['csy']])
-        # keysntx.append([wframe, samples[i]['x']])
-        # keysnty.append([wframe, samples[i]['y']])
-        # keysntz.append([wframe, samples[i]['z']])
-        # keysnfocal.append([wframe, samples[i]['pw']/2/math.tan(math.radians(samples[i]['fov'])/2)])
-        keysnfocal.append([write_frame, samples[i]['Focal_Length_meter']])
-        keysnfocus.append([write_frame, samples[i]['Focus_Distance_meter']])
-        keysnfstop.append([write_frame, samples[i]['Aperture']])
+            #二重配列に結果としてなるように、[wframe, samples[i][]]を配列の中にappendしている。
+            # keysnry.append([wframe, pan])
+            # radian
+            keysnrz.append([write_frame, samples[i]['Camera_Roll']])
+            keysnrx.append([write_frame, samples[i]['Camera_Tilt']])
+            
+            
+            # keysnk1.append([wframe, samples[i]['k1']])
+            # keysnk2.append([wframe, samples[i]['k2']])
+            # keysncsx.append([wframe, samples[i]['csx']])
+            # keysncsy.append([wframe, samples[i]['csy']])
+            # keysntx.append([wframe, samples[i]['x']])
+            # keysnty.append([wframe, samples[i]['y']])
+            # keysntz.append([wframe, samples[i]['z']])
+            # keysnfocal.append([wframe, samples[i]['pw']/2/math.tan(math.radians(samples[i]['fov'])/2)])
+            keysnfocal.append([write_frame, samples[i]['Focal_Length_meter']])
+            keysnfocus.append([write_frame, samples[i]['Focus_Distance_meter']])
+            keysnfstop.append([write_frame, samples[i]['Aperture']])
 
         # keyscamcsx.append([wframe, samples[i]['csx']])
         # keyscamcsy.append([wframe, samples[i]['csy']])
