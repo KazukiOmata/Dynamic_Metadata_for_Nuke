@@ -67,7 +67,7 @@ p1 = nuke.Panel('Dynamic Metadata setting')
 p1.addEnumerationPulldown('Select Read Node', read_node_names)
 # p1.addFilenameSearch('CSV file path', '~/Desktop/')
 p1.addFilenameSearch('Searching CSV folder path', '~/Desktop/')
-p1.addEnumerationPulldown('CSV type', 'SilverStack SONY-RawViewer')
+p1.addEnumerationPulldown('CSV type', 'SONY-RawViewer SilverStack')
 # p1.addSingleLineInput("Start frame", 1001)
 p1.addEnumerationPulldown("Keyframe", "StartFrame SourceTimecode" )
 p1.addEnumerationPulldown("Type of Camera Rotation order", 'XYZ XZY ZYX ZXY YXZ YZX')
@@ -97,17 +97,24 @@ selected_read_node_name = p1.value("Select Read Node")
 # print(selected_read_node_name)
 # print(type(selected_read_node_name))
 EXR_node = nuke.toNode(selected_read_node_name)
-EXR_first_frame = int(EXR_node["first"].value())
-EXR_last_frame  = int(EXR_node["last"].value())
+EXR_first_frame = int(EXR_node["first"].value()) # first frameのときのframe number
+EXR_last_frame  = int(EXR_node["last"].value()) # last frameのときのframe number
+EXR_duration_frame = EXR_last_frame - EXR_first_frame
+
 # print(first)
 # print(last)
-# EXR_node_start_tc = EXR_node.metadata("input/timecode")
 # EXR_node_start_frame = timecode_to_frames(EXR_node_start_tc)
 # EXR_node_start_frame = int(p1.value("Start frame"))
 # nuke.frame(EXR_node_start_frame)#move to start frame
 
 nuke.frame(EXR_first_frame)#move to start frame
-EXR_node_start_timecode = frames_to_timecode(EXR_first_frame)
+EXR_node_start_tc = EXR_node.metadata("input/timecode")# get start timecode , 現在のframeでないとtimecodeが適当なtimecodeになる。
+EXR_node_start_tc_to_frame = timecode_to_frames(EXR_node_start_tc)
+EXR_node_end_tc_to_frame = EXR_node_start_tc_to_frame + EXR_duration_frame
+
+# EXR_node_start_timecode = frames_to_timecode(EXR_first_frame)
+# EXR_node_end_timecode = frames_to_timecode(EXR_last_frame)
+
 # print(EXR_node_start_timecode)
 # print(type(EXR_node_start_timecode))
 # print(EXR_node_start_frame)
@@ -198,8 +205,8 @@ if not bFinish:
         for i in range(len(check)):
             
            
-            print("check[i]")
-            print(check[i])
+            # print("check[i]")
+            # print(check[i])
             if 'DynamicMetadataCam_' + str(node_counter) == check[i]:
                 # last checkならincrementして作成
                 if i + 1 == len(check):
@@ -359,15 +366,26 @@ if not bFinish:
     # keysvapert = []
     # keyswscale = []
 
+    _keyframe_counter = 0 #initialize
+
     for i, sample in enumerate(samples):
       
         samples[i]['frames'] = timecode_to_frames(samples[i]['Timecode'])
 
-        # EXRのstart TCよりも前にはkeyを打たない
-        if(EXR_first_frame <= samples[i]['frames']):
+        # print(EXR_node_start_tc_to_frame)
+        # print("vs")
+        # print(samples[i]['frames'])
+
+        # EXRのstart TCよりも前にはkeyを打たない, end TCよりも後にkeyを打たない
+        if(EXR_node_start_tc_to_frame <= samples[i]['frames'] and samples[i]['frames'] <= EXR_node_end_tc_to_frame):
             
+            write_frame = 0 #initialize
+
             if(keyframe == "StartFrame"):
-                write_frame = 1001 + i
+                # 1001 startとかになる
+                write_frame = EXR_first_frame + _keyframe_counter
+                print(write_frame)
+                _keyframe_counter = _keyframe_counter + 1
             elif(keyframe == "SourceTimecode"):
                 write_frame = int(samples[i]['frames'])
             else:
