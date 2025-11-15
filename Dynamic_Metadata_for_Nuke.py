@@ -67,6 +67,7 @@ p1 = nuke.Panel('Dynamic Metadata setting')
 p1.addEnumerationPulldown('Select Read Node', read_node_names)
 # p1.addFilenameSearch('CSV file path', '~/Desktop/')
 p1.addFilenameSearch('Searching CSV folder path', '~/Desktop/')
+p1.addBooleanCheckBox('Auto CSV Searching', True)
 p1.addEnumerationPulldown('CSV type', 'SONY-RawViewer SilverStack')
 # p1.addSingleLineInput("Start frame", 1001)
 p1.addEnumerationPulldown("Keyframe", "StartFrame SourceTimecode" )
@@ -88,6 +89,7 @@ else:
 # csv_path = p1.value("CSV file path")
 csv_path = ""
 csv_folder_path = p1.value("Searching CSV folder path")
+bCSV_Auto_Searching = p1.value("Auto CSV Searching")
 
 csv_type = p1.value("CSV type")
 rotation_order = p1.value("Type of Camera Rotation order")
@@ -125,23 +127,50 @@ EXR_node_reel_name = EXR_node.metadata("exr/reelName")
 keyframe = p1.value("Keyframe")
 
 
+searching_path = None#initialize
+# csvをreel nameから探すなら
+if(bCSV_Auto_Searching):
+    searching_path = pathlib.Path(csv_folder_path)
+    print(searching_path)
+    # print(type(searching_path))<class 'pathlib.PosixPath'>
+    searching_path = str(searching_path)
 
-searching_path = pathlib.Path(csv_folder_path)
-print(searching_path)
-# print(type(searching_path))<class 'pathlib.PosixPath'>
-searching_path = str(searching_path)
+    csv_path_array = glob.glob('**/' + EXR_node_reel_name +'.csv', recursive=True, root_dir=searching_path)
+    # print(csv_path_array)
+    if (len(csv_path_array) == 0):
+        print("CSV file is not found")
+        nuke.message('CSV is not searched. \n Please try again.')
 
-csv_path_array = glob.glob('**/' + EXR_node_reel_name +'.csv', recursive=True, root_dir=searching_path)
-# print(csv_path_array)
-if (len(csv_path_array) == 0):
-    print("CSV file is not found")
-    bFinish = True
-elif(len(csv_path_array) > 1):
-    print("Multiple CSV files are found")
-    bFinish = True
+        bFinish = True
+    elif(len(csv_path_array) > 1):
+        # 複数ヒットした場合
+        # 選択させる
+        print("Multiple CSV files are found")
+
+        Multiple_CSV_Panel = nuke.Panel('Multiple CSV files are found')
+
+        csv_path_array_str = ""
+        for n in csv_path_array:
+            csv_path_array_str += searching_path + "/" + n + " "
+        print(csv_path_array_str)
+        Multiple_CSV_Panel.addEnumerationPulldown("Select Multiple hit CSV", csv_path_array_str )
+
+        returnMultiple_CSV_Panel = Multiple_CSV_Panel.show()
+        selected_csv = Multiple_CSV_Panel.value("Select Multiple hit CSV")
+
+        csv_path = selected_csv
+
+    else:
+        csv_path = searching_path + "/" + csv_path_array[0]
+        print(csv_path)
+
+# csvのpathを直接選ぶなら
 else:
-    csv_path = searching_path + "/" + csv_path_array[0]
-    print(csv_path)
+    
+    csv_path = csv_folder_path
+
+
+
 
 
 
