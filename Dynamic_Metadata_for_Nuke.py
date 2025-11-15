@@ -70,6 +70,7 @@ p1.addBooleanCheckBox("Selected Read Node on Node Graph", True)
 p1.addFilenameSearch('Searching CSV folder path', '~/Desktop/')
 p1.addBooleanCheckBox('Auto CSV Searching', True)
 p1.addEnumerationPulldown('CSV type', 'SONY-RawViewer SilverStack')
+p1.addBooleanCheckBox('Auto CSV Type Detection', True)
 # p1.addSingleLineInput("Start frame", 1001)
 p1.addEnumerationPulldown("Keyframe", "StartFrame SourceTimecode" )
 p1.addEnumerationPulldown("Type of Camera Rotation order", 'XYZ XZY ZYX ZXY YXZ YZX')
@@ -93,6 +94,8 @@ csv_folder_path = p1.value("Searching CSV folder path")
 bCSV_Auto_Searching = p1.value("Auto CSV Searching")
 
 csv_type = p1.value("CSV type")
+bCSV_Auto_Detection = p1.value("Auto CSV Type Detection")
+
 rotation_order = p1.value("Type of Camera Rotation order")
 
 # nodegraph上で選択されているread nodeを利用するか？
@@ -142,10 +145,6 @@ if(bSelected_on_node_graph):
     else:
         print("EXR_node is unknown pattern")
         nuke.message('EXR_node is unknown pattern. \n Please confirm to developper.')
-
-        
-
-
 else:
     EXR_node = nuke.toNode(selected_read_node_name)
 
@@ -224,33 +223,69 @@ else:
 
 
 
-# csv parser
-try:
-    if(csv_type == "SilverStack"):
+# csv reader
+if (bCSV_Auto_Detection):# csv type auto detection
+    
+    try:
+
         with open(csv_path) as f:
-            # reader = csv.reader(f)
-            # csv_data = [row for row in reader]
-            reader = csv.DictReader(f)
+            # https://note.com/shirotabistudy/n/n2a9b0a8edba0
+            dialect = csv.Sniffer().sniff(f.read(1024)) #サンプルとして1024バイト読み込む
+            # print(dialect.delimiter)
+            f.seek(0) #ファイルの先頭に戻る
+
+            reader = csv.DictReader(f, dialect=dialect) # Snifferで判定した設定を使って読み込む
             csv_data = [row for row in reader]
-    elif(csv_type == "SONY-RawViewer"):
-        with open(csv_path) as f:
-            # reader = csv.reader(f)
-            # csv_data = [row for row in reader]
-            reader = csv.DictReader(f, delimiter='\t')
-            csv_data = [row for row in reader]
-    else:
-        print("csv type is not valid")
+
+            # https://nikkie-ftnext.hatenablog.com/entry/python-csv-reader-dialect-parameter-introduction
+
+            if(dialect.delimiter == ","):
+                print("Silver Stack")
+                csv_type = "SilverStack"
+            elif(dialect.delimiter == "\t"):
+                print("SONY RAW Viewer")
+                csv_type = "SONY-RawViewer"
+            else:
+                print("unknown csv format")
+                bFinish = True
+            
+    except FileNotFoundError:
+        print("file is no found")
         bFinish = True
         # sys.exit(0)
+    except PermissionError:
+        print("no permission to access the file")
+        bFinish = True
+        # sys.exit(0)
+    
+    
+else:#csv type manual
+    try:
+        if(csv_type == "SilverStack"):
+            with open(csv_path) as f:
+                # reader = csv.reader(f)
+                # csv_data = [row for row in reader]
+                reader = csv.DictReader(f)
+                csv_data = [row for row in reader]
+        elif(csv_type == "SONY-RawViewer"):
+            with open(csv_path) as f:
+                # reader = csv.reader(f)
+                # csv_data = [row for row in reader]
+                reader = csv.DictReader(f, delimiter='\t')
+                csv_data = [row for row in reader]
+        else:
+            print("csv type is not valid")
+            bFinish = True
+            # sys.exit(0)
 
-except FileNotFoundError:
-    print("file is no found")
-    bFinish = True
-    # sys.exit(0)
-except PermissionError:
-    print("no permission to access the file")
-    bFinish = True
-    # sys.exit(0)
+    except FileNotFoundError:
+        print("file is no found")
+        bFinish = True
+        # sys.exit(0)
+    except PermissionError:
+        print("no permission to access the file")
+        bFinish = True
+        # sys.exit(0)
 
 
 if not bFinish:
@@ -370,7 +405,6 @@ if not bFinish:
                 _Camera_Roll = 0.0
 
         elif csv_type == "SONY-RawViewer":
-
             _Timecode = row['Timecode']
 
             _Focal_Length_meter = row["Lens Zoom Actual Focal Length"].replace("mm", "")
