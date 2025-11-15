@@ -65,6 +65,7 @@ print(read_node_names)
 
 p1 = nuke.Panel('Dynamic Metadata setting')
 p1.addEnumerationPulldown('Select Read Node', read_node_names)
+p1.addBooleanCheckBox("Selected Read Node on Node Graph", True)
 # p1.addFilenameSearch('CSV file path', '~/Desktop/')
 p1.addFilenameSearch('Searching CSV folder path', '~/Desktop/')
 p1.addBooleanCheckBox('Auto CSV Searching', True)
@@ -94,11 +95,62 @@ bCSV_Auto_Searching = p1.value("Auto CSV Searching")
 csv_type = p1.value("CSV type")
 rotation_order = p1.value("Type of Camera Rotation order")
 
-
+# nodegraph上で選択されているread nodeを利用するか？
+bSelected_on_node_graph = p1.value("Selected Read Node on Node Graph")
 selected_read_node_name = p1.value("Select Read Node")
 # print(selected_read_node_name)
 # print(type(selected_read_node_name))
-EXR_node = nuke.toNode(selected_read_node_name)
+
+EXR_node = None
+if(bSelected_on_node_graph):
+    EXR_nodes = nuke.selectedNodes("Read")
+    print(EXR_nodes)
+    
+    # 複数選択されたら
+    if (len(EXR_nodes) > 1):
+        
+        print("Multiple Read node are found")
+
+        EXR_nodes.sort()
+
+        Multiple_Read_Node_Panel = nuke.Panel('Multiple Read Node are found/selected')
+
+        read_node_array_str = ""
+        for n in EXR_nodes:
+            read_node_array_str += n.name() + " "
+        # print(csv_path_array_str)
+        Multiple_Read_Node_Panel.addEnumerationPulldown("Select Multiple selected Read Node", read_node_array_str )
+
+        returnMultiple_Read_Node_Panel = Multiple_Read_Node_Panel.show()
+        if(returnMultiple_Read_Node_Panel):
+            _read_node = Multiple_Read_Node_Panel.value("Select Multiple selected Read Node")
+            EXR_node = nuke.toNode(_read_node)
+
+        else:
+            bFinish = True
+            # break 
+            # ここのerror処理がまだ未完成状態
+        
+        
+        
+
+    elif(len(EXR_nodes) == 0):
+        print("Selected Read Node is not found")
+        nuke.message('Selected Read Node is not found. \n Please try again.')
+    elif(len(EXR_nodes) == 1):
+        EXR_node = EXR_nodes[0]
+    else:
+        print("EXR_node is unknown pattern")
+        nuke.message('EXR_node is unknown pattern. \n Please confirm to developper.')
+
+        
+
+
+else:
+    EXR_node = nuke.toNode(selected_read_node_name)
+
+# print(EXR_node)
+
 EXR_first_frame = int(EXR_node["first"].value()) # first frameのときのframe number
 EXR_last_frame  = int(EXR_node["last"].value()) # last frameのときのframe number
 EXR_duration_frame = EXR_last_frame - EXR_first_frame
@@ -168,10 +220,6 @@ if(bCSV_Auto_Searching):
 else:
     
     csv_path = csv_folder_path
-
-
-
-
 
 
 
@@ -413,7 +461,7 @@ if not bFinish:
             if(keyframe == "StartFrame"):
                 # 1001 startとかになる
                 write_frame = EXR_first_frame + _keyframe_counter
-                print(write_frame)
+                # print(write_frame)
                 _keyframe_counter = _keyframe_counter + 1
             elif(keyframe == "SourceTimecode"):
                 write_frame = int(samples[i]['frames'])
