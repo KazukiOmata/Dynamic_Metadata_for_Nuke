@@ -58,7 +58,7 @@ def OpenMainPanel():
 
 
     p1 = nuke.Panel('Dynamic Metadata setting')
-    p1.addBooleanCheckBox("Selected Read Node on Node Graph", True)
+    p1.addBooleanCheckBox("Current Selected Read Node on Node Graph", True)
     p1.addEnumerationPulldown('Select Read Node', read_node_names)
     # p1.addFilenameSearch('CSV file path', '~/Desktop/')
     p1.addBooleanCheckBox('Auto CSV Searching', True)
