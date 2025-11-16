@@ -47,6 +47,7 @@ def frames_to_timecode(frames, framerate, start=None):
 
 def OpenMainPanel():
 
+    global bFnish
     
 
     read_nodes = nuke.allNodes("Read")
@@ -84,6 +85,8 @@ def OpenMainPanel():
 
 
 def select_read_node(_bSelected_on_node_graph, _selected_read_node_name_manually):
+    
+    global bFnish
     _EXR_node = None
 
     if(_bSelected_on_node_graph):
@@ -132,6 +135,9 @@ def select_read_node(_bSelected_on_node_graph, _selected_read_node_name_manually
     return _EXR_node
 
 def searching_csv(_bCSV_Auto_Searching, _csv_folder_path, _EXR_node_reel_name):
+    
+    global bFnish
+
     _csv_path = ""
     _searching_path = None#initialize
 
@@ -179,6 +185,8 @@ def searching_csv(_bCSV_Auto_Searching, _csv_folder_path, _EXR_node_reel_name):
     return _csv_path
 
 def read_csv(_bCSV_Auto_Detection, _csv_path, _csv_type):
+    
+    global bFnish
     _csv_data = None
 
     # csv reader
