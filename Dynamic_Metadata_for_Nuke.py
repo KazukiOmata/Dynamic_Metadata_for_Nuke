@@ -1,5 +1,5 @@
 #Dynamic Metadata from SilverStack csv for Nuke 
-# v1.2.4
+# v1.2.5
 # Kazuki Omata
 
 
@@ -67,7 +67,7 @@ def OpenMainPanel():
     p1.addEnumerationPulldown('CSV type', 'SONY-RawViewer SilverStack')
     # p1.addSingleLineInput("Start frame", 1001)
     p1.addEnumerationPulldown("Keyframe mode", "StartFrame SourceTimecode" )
-    p1.addEnumerationPulldown("Type of Camera Rotation order", 'XYZ XZY ZYX ZXY YXZ YZX')
+    p1.addEnumerationPulldown("Type of Camera Rotation order", 'ZXY XYZ XZY ZYX YXZ YZX')
 
 
     # show Panel
@@ -246,7 +246,7 @@ def read_csv(_bCSV_Auto_Detection, _csv_path, _csv_type):
 
     return _csv_data, _csv_type
 
-def create_DynamicMetaedataCam():
+def create_DynamicMetaedataCam(_rotation_order):
     _DynamicMetadataCam = None
     _check = []
 
@@ -278,7 +278,7 @@ def create_DynamicMetaedataCam():
             if 'DynamicMetadataCam_' + str(node_counter) == _check[i]:
                 # last checkならincrementして作成
                 if i + 1 == len(_check):
-                    _DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_"+str(node_counter+1), xpos=-90 + ((node_counter+1) * 90),ypos=-200, rot_order=rotation_order)
+                    _DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_"+str(node_counter+1), xpos=-90 + ((node_counter+1) * 90),ypos=-200, rot_order=_rotation_order)
                     break
                 # 同名ノードがあった場合の考慮 ex:DynamicMetadataCam_1が2つあった場合
                 # incrementしない
@@ -287,17 +287,17 @@ def create_DynamicMetaedataCam():
 
             # 歯抜けで存在しなかったら
             else:
-                _DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_"+str(node_counter), xpos=-90 + (node_counter * 90),ypos=-200, rot_order=rotation_order)
+                _DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_"+str(node_counter), xpos=-90 + (node_counter * 90),ypos=-200, rot_order=_rotation_order)
                 break
     #nodeが存在しなかったら
     else:
-        _DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_0", xpos=-90 ,ypos=-200, rot_order=rotation_order)
+        _DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_0", xpos=-90 ,ypos=-200, rot_order=_rotation_order)
 
     return _DynamicMetadataCam
 
-def add_Dynamic_keyframe(_csv_data, _csv_type, _frame_rate, _keyframe_mode, _EXR_node_start_tc_to_frame, _EXR_node_end_tc_to_frame, _EXR_first_frame):
+def add_Dynamic_keyframe(_csv_data, _csv_type, _frame_rate, _keyframe_mode, _EXR_node_start_tc_to_frame, _EXR_node_end_tc_to_frame, _EXR_first_frame, _rotation_order):
 
-    DynamicMetadataCam = create_DynamicMetaedataCam()
+    DynamicMetadataCam = create_DynamicMetaedataCam(_rotation_order)
         
         
 
@@ -588,7 +588,7 @@ def main():
 
 
     if not bFinish:
-        add_Dynamic_keyframe(csv_data, csv_type, project_framerate, keyframe_mode, EXR_node_start_tc_to_frame, EXR_node_end_tc_to_frame, EXR_first_frame)
+        add_Dynamic_keyframe(csv_data, csv_type, project_framerate, keyframe_mode, EXR_node_start_tc_to_frame, EXR_node_end_tc_to_frame, EXR_first_frame, rotation_order)
 
     # for debug
     # project_setting_range(EXR_first_frame, EXR_last_frame)
