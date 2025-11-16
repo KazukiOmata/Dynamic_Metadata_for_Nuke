@@ -58,13 +58,13 @@ def OpenMainPanel():
 
 
     p1 = nuke.Panel('Dynamic Metadata setting')
-    p1.addEnumerationPulldown('Select Read Node', read_node_names)
     p1.addBooleanCheckBox("Selected Read Node on Node Graph", True)
+    p1.addEnumerationPulldown('Select Read Node', read_node_names)
     # p1.addFilenameSearch('CSV file path', '~/Desktop/')
-    p1.addFilenameSearch('Searching CSV folder path', '~/Desktop/')
     p1.addBooleanCheckBox('Auto CSV Searching', True)
-    p1.addEnumerationPulldown('CSV type', 'SONY-RawViewer SilverStack')
+    p1.addFilenameSearch('Searching CSV folder path', '~/Desktop/')
     p1.addBooleanCheckBox('Auto CSV Type Detection', True)
+    p1.addEnumerationPulldown('CSV type', 'SONY-RawViewer SilverStack')
     # p1.addSingleLineInput("Start frame", 1001)
     p1.addEnumerationPulldown("Keyframe mode", "StartFrame SourceTimecode" )
     p1.addEnumerationPulldown("Type of Camera Rotation order", 'XYZ XZY ZYX ZXY YXZ YZX')
