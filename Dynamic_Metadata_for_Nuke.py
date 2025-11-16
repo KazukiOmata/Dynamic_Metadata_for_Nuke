@@ -1,5 +1,5 @@
 #Dynamic Metadata from SilverStack csv for Nuke 
-# v1.2.5
+# v1.2.6
 # Kazuki Omata
 
 
@@ -68,6 +68,7 @@ def OpenMainPanel():
     # p1.addSingleLineInput("Start frame", 1001)
     p1.addEnumerationPulldown("Keyframe mode", "StartFrame SourceTimecode" )
     p1.addEnumerationPulldown("Type of Camera Rotation order", 'ZXY XYZ XZY ZYX YXZ YZX')
+    p1.addBooleanCheckBox("Use Read node name for Camera node", True)
 
 
     # show Panel
@@ -246,9 +247,15 @@ def read_csv(_bCSV_Auto_Detection, _csv_path, _csv_type):
 
     return _csv_data, _csv_type
 
-def create_DynamicMetaedataCam(_rotation_order):
+def create_DynamicMetaedataCam(_rotation_order, _bUseReadNameforCameraNode, _EXR_clip_name):
     _DynamicMetadataCam = None
     _check = []
+
+    _Name_Pattern = ""
+    if(_bUseReadNameforCameraNode):
+        _Name_Pattern = _EXR_clip_name + 'Cam_'
+    else:
+        _Name_Pattern = 'DynamicMetadataCam_'
 
 
     bExist_DynamicMetadataCam_node = False
@@ -259,7 +266,7 @@ def create_DynamicMetaedataCam(_rotation_order):
         # _exist_cam = False
 
         # indexをつけて新しいnodeを作りたい
-        match_pattern = 'DynamicMetadataCam_\d*'
+        match_pattern = _Name_Pattern + '\d*'
         repatter = re.compile(match_pattern)
         match_result = repatter.match(n.name())
 
@@ -275,29 +282,29 @@ def create_DynamicMetaedataCam(_rotation_order):
         node_counter = 0
         for i in range(len(_check)):
             
-            if 'DynamicMetadataCam_' + str(node_counter) == _check[i]:
+            if _Name_Pattern + str(node_counter) == _check[i]:
                 # last checkならincrementして作成
                 if i + 1 == len(_check):
-                    _DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_"+str(node_counter+1), xpos=-90 + ((node_counter+1) * 90),ypos=-200, rot_order=_rotation_order)
+                    _DynamicMetadataCam = nuke.nodes.Camera(name=_Name_Pattern+str(node_counter+1), xpos=-90 + ((node_counter+1) * 90),ypos=-200, rot_order=_rotation_order)
                     break
                 # 同名ノードがあった場合の考慮 ex:DynamicMetadataCam_1が2つあった場合
                 # incrementしない
-                if 'DynamicMetadataCam_' + str(node_counter) != _check[i+1]:
+                if _Name_Pattern + str(node_counter) != _check[i+1]:
                     node_counter = node_counter+1
 
             # 歯抜けで存在しなかったら
             else:
-                _DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_"+str(node_counter), xpos=-90 + (node_counter * 90),ypos=-200, rot_order=_rotation_order)
+                _DynamicMetadataCam = nuke.nodes.Camera(name=_Name_Pattern+str(node_counter), xpos=-90 + (node_counter * 90),ypos=-200, rot_order=_rotation_order)
                 break
     #nodeが存在しなかったら
     else:
-        _DynamicMetadataCam = nuke.nodes.Camera(name="DynamicMetadataCam_0", xpos=-90 ,ypos=-200, rot_order=_rotation_order)
+        _DynamicMetadataCam = nuke.nodes.Camera(name=_Name_Pattern + "0", xpos=-90 ,ypos=-200, rot_order=_rotation_order)
 
     return _DynamicMetadataCam
 
-def add_Dynamic_keyframe(_csv_data, _csv_type, _frame_rate, _keyframe_mode, _EXR_node_start_tc_to_frame, _EXR_node_end_tc_to_frame, _EXR_first_frame, _rotation_order):
+def add_Dynamic_keyframe(_csv_data, _csv_type, _frame_rate, _keyframe_mode, _EXR_node_start_tc_to_frame, _EXR_node_end_tc_to_frame, _EXR_first_frame, _rotation_order, _bUseReadNameforCameraNode, _EXR_clip_name):
 
-    DynamicMetadataCam = create_DynamicMetaedataCam(_rotation_order)
+    DynamicMetadataCam = create_DynamicMetaedataCam(_rotation_order, _bUseReadNameforCameraNode, _EXR_clip_name)
         
         
 
@@ -574,6 +581,11 @@ def main():
     EXR_node_start_tc = EXR_node.metadata("input/timecode")# get start timecode , 現在のframeでないとtimecodeがそのときのtimecodeになる。
     EXR_node_start_tc_to_frame = timecode_to_frames(EXR_node_start_tc, project_framerate)
     EXR_node_end_tc_to_frame = EXR_node_start_tc_to_frame + EXR_duration_frame
+    
+    EXR_filename = EXR_node.metadata("input/filename") #file path
+    # print(pathlib.Path(EXR_filename).name)
+    EXR_clipname = pathlib.Path(EXR_filename).name
+   
 
     
     EXR_node_reel_name = EXR_node.metadata("exr/reelName")
@@ -581,6 +593,7 @@ def main():
     # keyframe mode
     keyframe_mode = mainPanel.value("Keyframe mode")
 
+    bUseReadNameforCameraNode = mainPanel.value("Use Read node name for Camera node")
 
     csv_path = searching_csv(bCSV_Auto_Searching, csv_folder_path, EXR_node_reel_name)
 
@@ -588,7 +601,7 @@ def main():
 
 
     if not bFinish:
-        add_Dynamic_keyframe(csv_data, csv_type, project_framerate, keyframe_mode, EXR_node_start_tc_to_frame, EXR_node_end_tc_to_frame, EXR_first_frame, rotation_order)
+        add_Dynamic_keyframe(csv_data, csv_type, project_framerate, keyframe_mode, EXR_node_start_tc_to_frame, EXR_node_end_tc_to_frame, EXR_first_frame, rotation_order, bUseReadNameforCameraNode, EXR_clipname)
 
     # for debug
     # project_setting_range(EXR_first_frame, EXR_last_frame)
