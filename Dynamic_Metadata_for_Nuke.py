@@ -409,6 +409,7 @@ def add_Dynamic_keyframe(_csv_data, _csv_type, _frame_rate, _keyframe_mode, _EXR
             
             _Camera_Roll = row['Camera Roll Angle']
             _Camera_Roll = float(_Camera_Roll)
+            _Camera_Roll = _Camera_Roll * (-1)
             if(_Camera_Roll == ""):
                 _Camera_Roll = 0.0
 
